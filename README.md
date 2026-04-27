@@ -32,3 +32,87 @@
 - 高效推理：ResNet-18 的輕量化特性，使其在邊緣設備端也能維持快速反應。
 
 ---
+
+## 專案結構 (Project Structure)
+
+```
+2026-Spring-DTAI/
+├── app.py                              # Flask 後端推論伺服器
+├── requirements.txt                    # Python 依賴套件清單
+├── plant_disease_resnet18_finetuned.pth  # 訓練好的模型權重
+├── templates/
+│   └── index.html                      # 前端網頁介面
+├── Final_Project.ipynb                 # 訓練流程 Notebook
+└── .venv/                              # Python 虛擬環境 (本地，不入版控)
+```
+
+---
+
+## 環境建置 (Setup)
+
+### 1. 建立虛擬環境
+
+> 需要 Python 3.8 以上版本。
+
+```bash
+# 建立虛擬環境
+python -m venv .venv
+
+# 啟動（Windows bash / Git Bash）
+source .venv/Scripts/activate
+
+# 啟動（macOS / Linux）
+source .venv/bin/activate
+```
+
+### 2. 安裝依賴套件
+
+在虛擬環境啟動後執行：
+
+```bash
+pip install -r requirements.txt
+```
+
+> **GPU 加速（選用）**：若機器有 NVIDIA GPU，可至 [pytorch.org](https://pytorch.org/get-started/locally/) 安裝對應 CUDA 版本的 PyTorch，推論速度可大幅提升。
+
+---
+
+## 啟動 Web 診斷介面 (Run the Web UI)
+
+確認已啟動虛擬環境，且專案根目錄下有 `plant_disease_resnet18_finetuned.pth` 權重檔。
+
+```bash
+python app.py
+```
+
+啟動成功後，終端機會顯示：
+
+```
+ * Running on http://127.0.0.1:5000
+```
+
+開啟瀏覽器前往 **http://127.0.0.1:5000** 即可使用。
+
+---
+
+### 可辨識的 15 種病害類別
+
+| # | 類別 |
+|---|------|
+| 1 | Pepper Bell - Bacterial Spot（甜椒細菌性斑點病） |
+| 2 | Pepper Bell - Healthy（甜椒健康） |
+| 3 | Potato - Early Blight（馬鈴薯早疫病） |
+| 4 | Potato - Late Blight（馬鈴薯晚疫病） |
+| 5 | Potato - Healthy（馬鈴薯健康） |
+| 6 | Tomato - Bacterial Spot（番茄細菌性斑點病） |
+| 7 | Tomato - Early Blight（番茄早疫病） |
+| 8 | Tomato - Late Blight（番茄晚疫病） |
+| 9 | Tomato - Leaf Mold（番茄葉黴病） |
+| 10 | Tomato - Septoria Leaf Spot（番茄斑枯病） |
+| 11 | Tomato - Spider Mites（番茄二斑葉蟎） |
+| 12 | Tomato - Target Spot（番茄靶斑病） |
+| 13 | Tomato - Yellow Leaf Curl Virus（番茄黃化曲葉病毒） |
+| 14 | Tomato - Mosaic Virus（番茄花葉病毒） |
+| 15 | Tomato - Healthy（番茄健康） |
+
+---

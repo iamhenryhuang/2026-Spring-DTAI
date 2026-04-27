@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>農作物病害診斷系統</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --green-dark:  #1b5e20;
+      --green-mid:   #2e7d32;
+      --green-light: #43a047;
+      --green-pale:  #e8f5e9;
+      --green-bar:   #66bb6a;
+      --bg:          #f1f5f1;
+      --card:        #ffffff;
+      --text:        #1c2b1c;
+      --muted:       #6b7b6b;
+      --border:      #d4e4d4;
+      --radius-lg:   18px;
+      --radius-md:   12px;
+      --radius-sm:   8px;
+      --shadow-sm:   0 1px 3px rgba(0,0,0,.08);
+      --shadow-md:   0 4px 16px rgba(0,0,0,.10);
+      --transition:  .2s ease;
+    }
+
+    body {
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* ── header ── */
+    header {
+      width: 100%;
+      background: linear-gradient(135deg, var(--green-dark) 0%, var(--green-light) 100%);
+      color: #fff;
+      padding: 2rem 2rem 1.6rem;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    header::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Ccircle cx='30' cy='30' r='20'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+      pointer-events: none;
+    }
+    header .leaf-bg {
+      position: absolute;
+      font-size: 8rem;
+      opacity: .06;
+      top: -1rem;
+      right: 2rem;
+      line-height: 1;
+      pointer-events: none;
+    }
+    header h1 {
+      font-size: 1.9rem;
+      font-weight: 700;
+      letter-spacing: .02em;
+      position: relative;
+    }
+    header .subtitle {
+      margin-top: .5rem;
+      font-size: .9rem;
+      opacity: .8;
+      position: relative;
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    header .pill {
+      background: rgba(255,255,255,.18);
+      border-radius: 20px;
+      padding: .15rem .75rem;
+      font-size: .8rem;
+      font-weight: 500;
+      backdrop-filter: blur(4px);
+    }
+
+    /* ── main layout ── */
+    main {
+      width: 100%;
+      max-width: 860px;
+      padding: 2rem 1rem 3rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.4rem;
+    }
+
+    /* ── section card wrapper ── */
+    .card {
+      background: var(--card);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-sm);
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+
+    /* ── drop zone ── */
+    #drop-zone {
+      padding: 3rem 1.5rem;
+      text-align: center;
+      cursor: pointer;
+      transition: background var(--transition), border-color var(--transition);
+      position: relative;
+      border: 2.5px dashed #b2d8b2;
+      border-radius: var(--radius-lg);
+      background: var(--card);
+    }
+    #drop-zone:hover,
+    #drop-zone.drag-over {
+      background: var(--green-pale);
+      border-color: var(--green-light);
+    }
+    #drop-zone input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+    }
+    .upload-icon {
+      width: 64px;
+      height: 64px;
+      margin: 0 auto .9rem;
+      background: var(--green-pale);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      transition: transform var(--transition);
+    }
+    #drop-zone:hover .upload-icon,
+    #drop-zone.drag-over .upload-icon { transform: scale(1.12); }
+    #drop-zone .upload-title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+    #drop-zone .upload-hint {
+      margin-top: .35rem;
+      font-size: .82rem;
+      color: var(--muted);
+    }
+    #drop-zone .upload-formats {
+      margin-top: .7rem;
+      display: flex;
+      justify-content: center;
+      gap: .4rem;
+      flex-wrap: wrap;
+    }
+    #drop-zone .fmt-tag {
+      background: #f0f0f0;
+      border-radius: 6px;
+      padding: .12rem .55rem;
+      font-size: .75rem;
+      color: #555;
+      font-weight: 500;
+    }
+
+    /* ── two-column layout (after upload) ── */
+    #content-row {
+      display: none;
+      gap: 1.4rem;
+    }
+    @media (min-width: 600px) {
+      #content-row { display: none; flex-direction: row; align-items: flex-start; }
+      #content-row.visible { display: flex; }
+      #preview-col { flex: 0 0 42%; }
+      #action-col  { flex: 1; display: flex; flex-direction: column; gap: 1rem; }
+    }
+    @media (max-width: 599px) {
+      #content-row.visible { display: flex; flex-direction: column; }
+    }
+
+    /* ── preview ── */
+    #preview-col .preview-wrap {
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      border: 1px solid var(--border);
+      background: #fafafa;
+      position: relative;
+      box-shadow: var(--shadow-sm);
+    }
+    #preview-img {
+      width: 100%;
+      display: block;
+      max-height: 320px;
+      object-fit: contain;
+    }
+    #preview-col .file-name {
+      padding: .5rem .8rem;
+      font-size: .78rem;
+      color: var(--muted);
+      border-top: 1px solid var(--border);
+      background: #fafafa;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* ── analyze button ── */
+    #analyze-btn {
+      width: 100%;
+      padding: .9rem 1rem;
+      background: linear-gradient(135deg, var(--green-mid), var(--green-light));
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 700;
+      border: none;
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: opacity var(--transition), transform .1s;
+      box-shadow: 0 2px 8px rgba(46,125,50,.3);
+      letter-spacing: .02em;
+    }
+    #analyze-btn:hover   { opacity: .92; }
+    #analyze-btn:active  { transform: scale(.98); }
+    #analyze-btn:disabled {
+      background: #a5d6a7;
+      box-shadow: none;
+      cursor: not-allowed;
+      opacity: 1;
+    }
+
+    /* ── reset button ── */
+    #reset-btn {
+      width: 100%;
+      padding: .65rem 1rem;
+      background: none;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-md);
+      color: var(--muted);
+      font-size: .88rem;
+      cursor: pointer;
+      transition: border-color var(--transition), color var(--transition);
+    }
+    #reset-btn:hover { border-color: var(--green-light); color: var(--green-mid); }
+
+    /* ── spinner ── */
+    #spinner {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      gap: .6rem;
+      color: var(--muted);
+      font-size: .9rem;
+      padding: .5rem 0;
+    }
+    .spin-ring {
+      width: 22px; height: 22px;
+      border: 3px solid #c8e6c9;
+      border-top-color: var(--green-mid);
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      flex-shrink: 0;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── results ── */
+    #results-section {
+      display: none;
+    }
+    #results-section .results-header {
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      margin-bottom: 1rem;
+    }
+    #results-section .results-header h2 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--green-dark);
+    }
+    #results-section .results-header .count-badge {
+      background: var(--green-pale);
+      color: var(--green-mid);
+      border-radius: 20px;
+      padding: .15rem .6rem;
+      font-size: .78rem;
+      font-weight: 600;
+    }
+
+    .result-item {
+      padding: .7rem 0;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .result-item:last-child { border-bottom: none; }
+
+    .result-item.top-result {
+      background: var(--green-pale);
+      border-radius: var(--radius-md);
+      padding: .85rem 1rem;
+      margin-bottom: .6rem;
+      border: none;
+    }
+
+    .result-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: .5rem;
+      margin-bottom: .4rem;
+    }
+    .result-rank {
+      font-size: .75rem;
+      font-weight: 700;
+      color: var(--muted);
+      min-width: 1.5rem;
+    }
+    .top-result .result-rank { color: var(--green-mid); }
+    .result-label {
+      flex: 1;
+      font-size: .9rem;
+      font-weight: 500;
+      color: var(--text);
+    }
+    .top-result .result-label { font-weight: 700; font-size: .95rem; }
+    .result-pct {
+      font-size: .85rem;
+      font-weight: 700;
+      color: var(--green-mid);
+      min-width: 3.2rem;
+      text-align: right;
+    }
+
+    .bar-track {
+      height: 7px;
+      background: #e0e0e0;
+      border-radius: 10px;
+      overflow: hidden;
+      margin-left: 1.8rem;
+    }
+    .top-result .bar-track { background: #c8e6c9; }
+    .bar-fill {
+      height: 100%;
+      border-radius: 10px;
+      background: linear-gradient(90deg, var(--green-bar), var(--green-mid));
+      width: 0;
+      transition: width .7s cubic-bezier(.4,0,.2,1);
+    }
+
+    /* ── top verdict banner ── */
+    #verdict {
+      display: none;
+      align-items: center;
+      gap: .7rem;
+      background: var(--green-pale);
+      border: 1.5px solid #a5d6a7;
+      border-radius: var(--radius-lg);
+      padding: 1rem 1.2rem;
+    }
+    #verdict .verdict-icon { font-size: 2rem; flex-shrink: 0; }
+    #verdict .verdict-body {}
+    #verdict .verdict-label { font-size: .78rem; color: var(--muted); font-weight: 500; }
+    #verdict .verdict-class { font-size: 1.1rem; font-weight: 700; color: var(--green-dark); margin-top: .1rem; }
+    #verdict .verdict-conf  { font-size: .85rem; color: var(--green-mid); margin-top: .1rem; }
+
+    /* ── error ── */
+    #error-msg {
+      display: none;
+      background: #fff3f3;
+      color: #c62828;
+      border: 1px solid #ffcdd2;
+      border-radius: var(--radius-md);
+      padding: .85rem 1rem;
+      font-size: .88rem;
+      display: none;
+      align-items: center;
+      gap: .5rem;
+    }
+    #error-msg.show { display: flex; }
+
+    /* ── footer ── */
+    footer {
+      margin-top: auto;
+      padding: 1.2rem;
+      font-size: .78rem;
+      color: #aaa;
+      text-align: center;
+    }
+
+    /* ── fade-in ── */
+    .fade-in { animation: fadeIn .35s ease both; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="leaf-bg">🌿</div>
+  <h1>🌿 農作物病害自動化診斷系統</h1>
+  <div class="subtitle">
+    <span class="pill">ResNet-18</span>
+    <span class="pill">15 種病害</span>
+    <span class="pill">準確率 97.2%</span>
+    <span class="pill">PlantVillage</span>
+  </div>
+</header>
+
+<main>
+
+  <!-- Upload -->
+  <div id="drop-zone">
+    <input type="file" id="file-input" accept="image/*" />
+    <div class="upload-icon">📷</div>
+    <div class="upload-title">點擊選擇影像，或拖曳至此處</div>
+    <div class="upload-hint">上傳植物葉片影像以進行病害診斷</div>
+    <div class="upload-formats">
+      <span class="fmt-tag">JPG</span>
+      <span class="fmt-tag">PNG</span>
+      <span class="fmt-tag">WEBP</span>
+      <span class="fmt-tag">BMP</span>
+    </div>
+  </div>
+
+  <!-- Error -->
+  <div id="error-msg">⚠️ <span id="error-text"></span></div>
+
+  <!-- Two-column: preview + actions -->
+  <div id="content-row">
+
+    <!-- Left: preview -->
+    <div id="preview-col">
+      <div class="preview-wrap card">
+        <img id="preview-img" src="" alt="預覽影像" />
+        <div class="file-name" id="file-name-label"></div>
+      </div>
+    </div>
+
+    <!-- Right: buttons + spinner + verdict -->
+    <div id="action-col">
+
+      <button id="analyze-btn">🔍 開始分析</button>
+
+      <div id="spinner">
+        <div class="spin-ring"></div>
+        模型推論中，請稍候…
+      </div>
+
+      <!-- Top-1 verdict card -->
+      <div id="verdict">
+        <div class="verdict-icon" id="verdict-icon">🌱</div>
+        <div class="verdict-body">
+          <div class="verdict-label">最高信心診斷結果</div>
+          <div class="verdict-class" id="verdict-class">—</div>
+          <div class="verdict-conf"  id="verdict-conf">—</div>
+        </div>
+      </div>
+
+      <button id="reset-btn">↩ 重新上傳</button>
+
+    </div>
+  </div>
+
+  <!-- Results detail -->
+  <div id="results-section" class="card" style="padding: 1.2rem 1.4rem;">
+    <div class="results-header">
+      <h2>詳細診斷結果</h2>
+      <span class="count-badge">Top-5</span>
+    </div>
+    <div id="results-list"></div>
+  </div>
+
+</main>
+
+<footer>PlantVillage Dataset · ResNet-18 Fine-tuned · 2026 Spring DTAI</footer>
+
+<script>
+  const dropZone    = document.getElementById("drop-zone");
+  const fileInput   = document.getElementById("file-input");
+  const contentRow  = document.getElementById("content-row");
+  const previewImg  = document.getElementById("preview-img");
+  const fileLabel   = document.getElementById("file-name-label");
+  const analyzeBtn  = document.getElementById("analyze-btn");
+  const resetBtn    = document.getElementById("reset-btn");
+  const spinner     = document.getElementById("spinner");
+  const resultsSec  = document.getElementById("results-section");
+  const resultsList = document.getElementById("results-list");
+  const errorMsg    = document.getElementById("error-msg");
+  const errorText   = document.getElementById("error-text");
+  const verdict     = document.getElementById("verdict");
+  const verdictIcon = document.getElementById("verdict-icon");
+  const verdictClass= document.getElementById("verdict-class");
+  const verdictConf = document.getElementById("verdict-conf");
+
+  let selectedFile = null;
+
+  // healthy classes show a leaf; diseased classes show a warning
+  function pickIcon(cls) {
+    return cls.toLowerCase().includes("healthy") ? "🌱" : "⚠️";
+  }
+
+  // ── drag-and-drop ──
+  dropZone.addEventListener("dragover", e => { e.preventDefault(); dropZone.classList.add("drag-over"); });
+  dropZone.addEventListener("dragleave", e => { if (!dropZone.contains(e.relatedTarget)) dropZone.classList.remove("drag-over"); });
+  dropZone.addEventListener("drop", e => {
+    e.preventDefault();
+    dropZone.classList.remove("drag-over");
+    const file = e.dataTransfer.files[0];
+    if (file) handleFile(file);
+  });
+  fileInput.addEventListener("change", () => { if (fileInput.files[0]) handleFile(fileInput.files[0]); });
+
+  function handleFile(file) {
+    if (!file.type.startsWith("image/")) { showError("請選擇有效的影像檔案 (JPG / PNG / WEBP …)"); return; }
+    selectedFile = file;
+    hideError();
+    hideResults();
+
+    const reader = new FileReader();
+    reader.onload = e => {
+      previewImg.src = e.target.result;
+      fileLabel.textContent = file.name;
+      contentRow.classList.add("visible");
+      dropZone.style.display = "none";
+      analyzeBtn.style.display = "block";
+      resetBtn.style.display   = "block";
+      verdict.style.display    = "none";
+    };
+    reader.readAsDataURL(file);
+  }
+
+  // ── analyze ──
+  analyzeBtn.addEventListener("click", async () => {
+    if (!selectedFile) return;
+    analyzeBtn.disabled = true;
+    spinner.style.display = "flex";
+    hideResults();
+    hideError();
+
+    const fd = new FormData();
+    fd.append("file", selectedFile);
+
+    try {
+      const res  = await fetch("/predict", { method: "POST", body: fd });
+      const data = await res.json();
+      if (!res.ok || data.error) { showError(data.error || "伺服器錯誤，請稍後再試"); return; }
+      renderResults(data.predictions);
+    } catch {
+      showError("無法連線至伺服器，請確認後端是否已啟動。");
+    } finally {
+      spinner.style.display = "none";
+      analyzeBtn.disabled = false;
+    }
+  });
+
+  function renderResults(predictions) {
+    // verdict banner
+    const top = predictions[0];
+    verdictIcon.textContent  = pickIcon(top.class);
+    verdictClass.textContent = top.class;
+    verdictConf.textContent  = `信心度：${top.confidence.toFixed(1)}%`;
+    verdict.style.display = "flex";
+    verdict.classList.add("fade-in");
+
+    // list
+    resultsList.innerHTML = "";
+    predictions.forEach((item, i) => {
+      const conf = item.confidence.toFixed(1);
+      const el = document.createElement("div");
+      el.className = "result-item" + (i === 0 ? " top-result fade-in" : " fade-in");
+      el.style.animationDelay = `${i * 60}ms`;
+      el.innerHTML = `
+        <div class="result-row">
+          <span class="result-rank">${i === 0 ? "🥇" : `#${i + 1}`}</span>
+          <span class="result-label">${item.class}</span>
+          <span class="result-pct">${conf}%</span>
+        </div>
+        <div class="bar-track">
+          <div class="bar-fill" data-width="${conf}"></div>
+        </div>`;
+      resultsList.appendChild(el);
+    });
+
+    resultsSec.style.display = "block";
+    resultsSec.classList.add("fade-in");
+
+    // trigger bar animations after paint
+    requestAnimationFrame(() => {
+      document.querySelectorAll(".bar-fill").forEach(el => {
+        el.style.width = el.dataset.width + "%";
+      });
+    });
+  }
+
+  // ── reset ──
+  resetBtn.addEventListener("click", () => {
+    selectedFile = null;
+    fileInput.value = "";
+    previewImg.src = "";
+    fileLabel.textContent = "";
+    contentRow.classList.remove("visible");
+    dropZone.style.display = "";
+    analyzeBtn.style.display = "none";
+    resetBtn.style.display   = "none";
+    hideResults();
+    hideError();
+  });
+
+  function hideResults() {
+    resultsSec.style.display = "none";
+    verdict.style.display    = "none";
+    resultsList.innerHTML    = "";
+  }
+  function showError(msg) { errorText.textContent = msg; errorMsg.classList.add("show"); }
+  function hideError()    { errorMsg.classList.remove("show"); }
+</script>
+</body>
+</html>
