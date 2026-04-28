@@ -1,4 +1,4 @@
-# 農作物病害自動化診斷系統 (Plant Disease Classification)
+# 農作物病害自動化診斷系統
 > **基於深度學習 ResNet-18 的即時影像辨識解決方案**
 
 ![Python](https://img.shields.io/badge/Python-3.8%2B-blue)
@@ -8,13 +8,13 @@
 
 本專案利用殘差網路 (ResNet) 遷移學習技術，實現高精度的自動化農作物病害檢測。透過兩階段訓練策略（凍結特徵提取層與全層微調），有效提升了模型在複雜病斑上的辨識能力。
 
-## 訓練成果 (Results)
+## 訓練成果
 本模型在驗證集上表現極其優異，尤其在第二階段 Fine-tuning 後取得了顯著突破：
 - 初始驗證準確度：約 94% (僅訓練全連接層)
 - 最終驗證準確度 (Fine-tuning)：**97.2%**
 - 分類表現：模型對於 15 種常見作物病害（如蘋果黑星病、番茄晚疫病等）展現了極強的泛化能力，F1-score 穩定於高位。
 
-## 技術規格 (Technical Specifications)
+## 技術規格
 ### 1. 訓練策略：兩階段遷移學習
 為了達到最佳收斂效果，專案採用了以下步驟：
 * 第一階段 (Transfer Learning)：凍結 ResNet-18 的卷積層，僅訓練輸出的 Linear Head。
@@ -26,14 +26,14 @@
 - 優化器配置：使用 Adam 優化器，搭配學習率衰減策略 (StepLR) 以確保細節微調時的穩定性。
 - 數據集規模：PlantVillage Dataset，包含超過 20,000 張標註影像。
 
-## 核心功能 (Core Features)
+## 核心功能
 - 自動化分類：精準辨識包含黑斑病、銹病、白粉病等多種常見作物病害。
 - 信心度回傳：輸出疾病類別並附帶信心程度。
 - 高效推理：ResNet-18 的輕量化特性，使其在邊緣設備端也能維持快速反應。
 
 ---
 
-## 專案結構 (Project Structure)
+## 專案結構
 
 ```
 2026-Spring-DTAI/
@@ -48,7 +48,7 @@
 
 ---
 
-## 環境建置 (Setup)
+## 環境建置
 
 ### 1. 建立虛擬環境
 
@@ -77,7 +77,7 @@ pip install -r requirements.txt
 
 ---
 
-## 啟動 Web 診斷介面 (Run the Web UI)
+## 啟動 Web 診斷介面
 
 確認已啟動虛擬環境，且專案根目錄下有 `plant_disease_resnet18_finetuned.pth` 權重檔。
 
