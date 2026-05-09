@@ -74,13 +74,13 @@ def predict():
         logits = model(tensor)
         probs = torch.softmax(logits, dim=1)[0]
 
-    top5 = torch.topk(probs, k=5)
+    top3 = torch.topk(probs, k=3)
     results = [
         {
             "class": CLASS_NAMES[idx.item()],
             "confidence": round(prob.item() * 100, 2),
         }
-        for prob, idx in zip(top5.values, top5.indices)
+        for prob, idx in zip(top3.values, top3.indices)
     ]
 
     return jsonify({"predictions": results})

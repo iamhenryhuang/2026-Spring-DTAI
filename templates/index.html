@@ -908,7 +908,7 @@
     requestAnimationFrame(() => { vBarFill.style.width = pct + "%"; });
 
     resList.innerHTML = "";
-    preds.forEach((item, i) => {
+    preds.slice(0, 3).forEach((item, i) => {
       const p = item.confidence.toFixed(1);
       const el = document.createElement("div");
       el.className = "fi";
