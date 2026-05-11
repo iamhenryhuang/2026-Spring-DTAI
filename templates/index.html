@@ -639,6 +639,58 @@
 
     .r1 .rfill { background: var(--p-400); }
 
+    /* Advice */
+    .advice {
+      display: none;
+      border-top: 1px solid var(--n-100);
+      padding: 18px 20px 20px;
+      background: var(--n-50);
+    }
+
+    .advice.on { display: block; }
+
+    .advice-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .advice-title {
+      font-size: .78rem;
+      font-weight: 800;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      color: var(--n-500);
+    }
+
+    .advice-status {
+      display: none;
+      align-items: center;
+      gap: 7px;
+      color: var(--a-500);
+      font-size: .73rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .advice-status.on { display: inline-flex; }
+
+    .advice-body {
+      font-size: .82rem;
+      color: var(--n-700);
+      line-height: 1.7;
+      white-space: pre-line;
+    }
+
+    .advice-note {
+      margin-top: 12px;
+      color: var(--n-400);
+      font-size: .72rem;
+      line-height: 1.55;
+    }
+
     /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
        Responsive
     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
@@ -778,6 +830,18 @@
         <div id="results-list"></div>
       </div>
 
+      <div class="advice" id="advice">
+        <div class="advice-head">
+          <div class="advice-title">Gemini 照護建議</div>
+          <div class="advice-status" id="advice-status">
+            <div class="spin"></div>
+            產生中
+          </div>
+        </div>
+        <div class="advice-body" id="advice-body"></div>
+        <div class="advice-note">此內容由 AI 依模型結果產生，實際處理仍建議搭配現場觀察與專業判斷。</div>
+      </div>
+
     </div>
 
   </div>
@@ -806,6 +870,9 @@
   const vZh        = document.getElementById("v-zh");
   const hdStatus   = document.getElementById("hd-status");
   const hdLabel    = document.getElementById("hd-label");
+  const advice     = document.getElementById("advice");
+  const adviceBody = document.getElementById("advice-body");
+  const adviceStat = document.getElementById("advice-status");
 
   const ZH = {
     "Pepper Bell - Bacterial Spot":                  "甜椒 — 細菌性斑點病",
@@ -874,7 +941,7 @@
       const data = await res.json();
       if (!res.ok || data.error) { showErr(data.error || "辨識失敗，請重新嘗試。"); return; }
       render(data.predictions);
-      setStatus("辨識完成", "ready");
+      await loadAdvice(data.predictions[0]);
     } catch {
       showErr("無法連線至辨識服務。");
     } finally {
@@ -930,11 +997,46 @@
     });
   }
 
+  async function loadAdvice(top) {
+    advice.classList.add("on");
+    adviceBody.textContent = "";
+    adviceStat.classList.add("on");
+    setStatus("產生建議中…", "busy");
+
+    try {
+      const res = await fetch("/advice", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          class: top.class,
+          confidence: top.confidence,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        adviceBody.textContent = data.error || "暫時無法產生照護建議。";
+        setStatus("辨識完成", "ready");
+        return;
+      }
+      adviceBody.textContent = data.advice;
+      setStatus("辨識完成", "ready");
+    } catch {
+      adviceBody.textContent = "無法連線至建議服務，請稍後再試。";
+      setStatus("辨識完成", "ready");
+    } finally {
+      adviceStat.classList.remove("on");
+    }
+  }
+
   function clearResults() {
     resList.style.display = "none";
     empty.style.display = "";
     verdict.style.display = "none";
     resList.innerHTML = "";
+    advice.classList.remove("on");
+    adviceBody.textContent = "";
+    adviceStat.classList.remove("on");
+    vBarFill.style.width = "0";
   }
 
   function showErr(msg) {

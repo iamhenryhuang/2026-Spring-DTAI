@@ -75,6 +75,20 @@ pip install -r requirements.txt
 
 > **GPU 加速（選用）**：若機器有 NVIDIA GPU，可至 [pytorch.org](https://pytorch.org/get-started/locally/) 安裝對應 CUDA 版本的 PyTorch，推論速度可大幅提升。
 
+### 3. 設定 Gemini API Key（選用）
+
+若要在辨識完成後產生照護建議，請先設定 `GEMINI_API_KEY`。API key 會由 Flask 後端讀取，不會放在前端程式碼中。
+
+```powershell
+$env:GEMINI_API_KEY="你的 Gemini API Key"
+```
+
+可選擇指定模型，未設定時預設使用 `gemini-2.5-flash`：
+
+```powershell
+$env:GEMINI_MODEL="gemini-2.5-flash"
+```
+
 ---
 
 ## 啟動 Web 診斷介面
