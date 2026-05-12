@@ -116,9 +116,6 @@ def get_gemini_advice(disease_class: str, confidence: float) -> str:
         "generationConfig": {
             "temperature": 0.4,
             "maxOutputTokens": 1024,
-            "thinkingConfig": {
-                "thinkingBudget": 0,
-            },
         },
     }
     body = json.dumps(payload).encode("utf-8")
