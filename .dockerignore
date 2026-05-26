@@ -1,0 +1,10 @@
+.env
+.git
+*.pth
+.gitignore
+__pycache__
+*.pyc
+*.pyo
+*.ipynb
+*.ipynb_checkpoints
+README.md
