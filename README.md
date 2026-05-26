@@ -39,13 +39,16 @@
 
 ```
 2026-Spring-DTAI/
-├── app.py                              # Flask 後端推論伺服器
-├── requirements.txt                    # Python 依賴套件清單
-├── plant_disease_resnet18_finetuned.pth  # 訓練好的模型權重
+├── app.py                   # Flask 後端推論伺服器
+├── requirements.txt         # Python 依賴套件清單
+├── Dockerfile               # 容器化設定
+├── docker-compose.yml
+├── .dockerignore
 ├── templates/
-│   └── index.html                      # 前端網頁介面
-├── Final_Project.ipynb                 # 訓練流程 Notebook
-└── .venv/                              # Python 虛擬環境 (本地，不入版控)
+│   └── index.html           # 前端網頁介面
+└── train/
+    ├── Train.ipynb          # 模型訓練流程
+    └── plantvillage.ipynb   # 資料集探索
 ```
 
 ---
@@ -85,10 +88,10 @@ pip install -r requirements.txt
 $env:GEMINI_API_KEY="你的 Gemini API Key"
 ```
 
-可選擇指定模型，未設定時預設使用 `gemini-1.5-flash`：
+可選擇指定模型，未設定時預設使用 `gemini-2.5-flash`：
 
 ```powershell
-$env:GEMINI_MODEL="gemini-1.5-flash"
+$env:GEMINI_MODEL="gemini-2.5-flash"
 ```
 
 ---
@@ -108,6 +111,26 @@ python app.py
 ```
 
 開啟瀏覽器前往 **http://127.0.0.1:5000** 即可使用。
+
+---
+
+## Docker 容器化部署
+
+**前置條件：** 安裝 [Docker Desktop](https://www.docker.com/products/docker-desktop/)，並在專案根目錄建立 `.env`：
+
+```
+GEMINI_API_KEY=你的key
+```
+
+| 動作 | 指令 |
+|------|------|
+| 首次啟動（自動 build，約 5–10 分鐘） | `docker compose up --build` |
+| 日常啟動 | `docker compose up` |
+| 背景執行 | `docker compose up -d` |
+| 停止 | `Ctrl+C` 或 `docker compose down` |
+| 完整清除（含 image，釋放約 1.1 GB） | `docker compose down --rmi all` |
+
+啟動後開啟瀏覽器前往 **http://localhost:5000**。
 
 ---
 
