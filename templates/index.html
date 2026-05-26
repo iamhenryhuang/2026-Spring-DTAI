@@ -705,10 +705,21 @@
   }
 
   function mdToHtml(text) {
-    return text
-      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
-      .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
-      .replace(/\n/g, "<br>");
+    const esc = s => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    const lines = text.split("\n");
+    let html = "";
+    for (const raw of lines) {
+      const line = esc(raw.trim());
+      if (!line) { html += "<br>"; continue; }
+      if (line.startsWith("■ ")) {
+        html += `<p style="font-weight:700;color:var(--p-600);margin:12px 0 4px">${line.slice(2)}</p>`;
+      } else if (line.startsWith("• ")) {
+        html += `<p style="margin:2px 0 2px 12px">• ${line.slice(2)}</p>`;
+      } else {
+        html += `<p style="margin:2px 0">${line}</p>`;
+      }
+    }
+    return html;
   }
 
   function showAdviceContent(text) {
