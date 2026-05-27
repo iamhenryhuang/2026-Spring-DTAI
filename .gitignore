@@ -17,7 +17,6 @@ __pycache__/
 Thumbs.db
 
 # Docs (binary)
-*.pdf
 *.docx
 
 # env file (contains sensitive information)
