@@ -1,4 +1,4 @@
-# 農作物病害自動化診斷系統
+# 深度學習農作物病蟲害影像辨識
 > **基於深度學習 ResNet-18 的即時影像辨識解決方案**
 
 ![Python](https://img.shields.io/badge/Python-3.8%2B-blue)
@@ -6,7 +6,7 @@
 ![ResNet18](https://img.shields.io/badge/Model-ResNet--18-orange)
 ![Accuracy](https://img.shields.io/badge/Accuracy-97.2%25-brightgreen)
 
-本專案利用殘差網路 (ResNet) 遷移學習技術，實現高精度的自動化農作物病害檢測。透過兩階段訓練策略（凍結特徵提取層與全層微調），有效提升了模型在複雜病斑上的辨識能力。
+本專案利用 ResNet 遷移學習技術，實現高精度的自動化農作物病害檢測。透過兩階段訓練策略（凍結特徵提取層與全層微調），有效提升了模型在複雜病斑上的辨識能力。
 
 ## 訓練成果
 本模型在驗證集上表現極其優異，尤其在第二階段 Fine-tuning 後取得了顯著突破：
@@ -24,7 +24,7 @@
 - 模型基礎：ResNet-18 (ImageNet Pre-trained)。
 - 影像尺寸：輸入解析度調整為 `299x299`。
 - 優化器配置：使用 Adam 優化器，搭配學習率衰減策略 (StepLR) 以確保細節微調時的穩定性。
-- 數據集規模：PlantVillage Dataset，包含超過 20,000 張標註影像。
+- 數據集規模：[PlantVillage Dataset](https://www.kaggle.com/datasets/emmarex/plantdisease)，包含超過 20,000 張標註影像。
 
 ## 核心功能
 - 自動化分類：精準辨識包含黑斑病、銹病、白粉病等多種常見作物病害。
@@ -78,8 +78,6 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-> **GPU 加速（選用）**：若機器有 NVIDIA GPU，可至 [pytorch.org](https://pytorch.org/get-started/locally/) 安裝對應 CUDA 版本的 PyTorch，推論速度可大幅提升。
-
 ### 3. 設定 Gemini API Key（選用）
 
 若要在辨識完成後產生照護建議，請先設定 `GEMINI_API_KEY`。API key 會由 Flask 後端讀取，不會放在前端程式碼中。
@@ -96,21 +94,17 @@ $env:GEMINI_MODEL="gemini-2.5-flash"
 
 ---
 
-## 啟動 Web 診斷介面
+## 啟動 Web 介面
 
-確認已啟動虛擬環境，且專案根目錄下有 `plant_disease_resnet18_finetuned.pth` 權重檔。
+本專案建議透過 Docker 啟動，容器首次執行時會自動從 HuggingFace 下載模型權重，無需手動準備。
 
 ```bash
-python app.py
+docker compose up --build
 ```
 
-啟動成功後，終端機會顯示：
+啟動成功後，開啟瀏覽器前往 **http://localhost:5000** 即可使用。
 
-```
- * Running on http://127.0.0.1:5000
-```
-
-開啟瀏覽器前往 **http://127.0.0.1:5000** 即可使用。
+> 詳細 Docker 指令請參考下方 **Docker 容器化部署** 章節。
 
 ---
 
@@ -155,3 +149,13 @@ GEMINI_API_KEY=你的key
 | 15 | Tomato - Healthy（番茄健康） |
 
 ---
+
+## 組員
+
+| 系級 | 姓名 |
+|------|------|
+| 統計四 | 林承佑 |
+| 統計四 | 曾博鴻 |
+| 資訊三 | 黃柏淵 |
+| 資訊三 | 陳立衡 |
+| 資訊三 | 羅士恆 |
