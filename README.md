@@ -30,8 +30,8 @@
 - 自動化分類：精準辨識包含黑斑病、銹病、白粉病等多種常見作物病害。
 - 信心度回傳：輸出疾病類別並附帶信心程度，同時列出 Top-3 候選結果。
 - 高效推理：ResNet-18 的輕量化特性，使其在邊緣設備端也能維持快速反應。
-- AI 照護建議：辨識完成後自動呼叫 Gemini API，產生針對病害的中文照護建議。
-- 三欄式介面：影像上傳、診斷結果、Gemini 建議並排顯示於同一面板，一目瞭然。
+- AI 照護建議：辨識完成後自動呼叫 Groq API（llama-3.3-70b-versatile），產生針對病害的中文照護建議。
+- 三欄式介面：影像上傳、診斷結果、AI 建議並排顯示於同一面板，一目瞭然。
 
 ---
 
@@ -78,18 +78,18 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 3. 設定 Gemini API Key（選用）
+### 3. 設定 Groq API Key（選用）
 
-若要在辨識完成後產生照護建議，請先設定 `GEMINI_API_KEY`。API key 會由 Flask 後端讀取，不會放在前端程式碼中。
+若要在辨識完成後產生照護建議，請先設定 `GROQ_API_KEY`。API key 可至 [console.groq.com](https://console.groq.com) 免費申請，會由 Flask 後端讀取，不會放在前端程式碼中。
 
 ```powershell
-$env:GEMINI_API_KEY="你的 Gemini API Key"
+$env:GROQ_API_KEY="你的 Groq API Key"
 ```
 
-可選擇指定模型，未設定時預設使用 `gemini-2.5-flash`：
+可選擇指定模型，未設定時預設使用 `llama-3.3-70b-versatile`：
 
 ```powershell
-$env:GEMINI_MODEL="gemini-2.5-flash"
+$env:GROQ_MODEL="llama-3.3-70b-versatile"
 ```
 
 ---
@@ -113,7 +113,7 @@ docker compose up --build
 **前置條件：** 安裝 [Docker Desktop](https://www.docker.com/products/docker-desktop/)，並在專案根目錄建立 `.env`：
 
 ```
-GEMINI_API_KEY=你的key
+GROQ_API_KEY=你的key
 ```
 
 | 動作 | 指令 |
