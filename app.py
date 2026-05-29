@@ -152,92 +152,53 @@ def _normalize_advice(text: str) -> str:
     return "\n".join(out).strip()
 
 
-def extract_gemini_text(data: dict) -> str:
-    parts = (
-        data.get("candidates", [{}])[0]
-        .get("content", {})
-        .get("parts", [])
-    )
-    text = "\n".join(part.get("text", "") for part in parts).strip()
+def extract_groq_text(data: dict) -> str:
+    text = (
+        data.get("choices", [{}])[0]
+        .get("message", {})
+        .get("content", "")
+        or ""
+    ).strip()
     return _normalize_advice(text)
 
 
-def get_gemini_model_candidates() -> list[str]:
-    configured_model = os.environ.get("GEMINI_MODEL", "").strip()
-    fallback_models = os.environ.get(
-        "GEMINI_MODEL_FALLBACKS",
-        "gemini-2.5-flash,gemini-2.0-flash",
-    )
-    candidates = []
-    for model_name in [configured_model, *fallback_models.split(",")]:
-        model_name = model_name.strip()
-        if model_name and model_name not in candidates:
-            candidates.append(model_name)
-    return candidates or ["gemini-2.5-flash"]
-
-
-def call_gemini_generate_content(model_name: str, body: bytes, api_key: str) -> dict:
-    api_version = os.environ.get("GEMINI_API_VERSION", "v1beta").strip() or "v1beta"
-    url = (
-        "https://generativelanguage.googleapis.com/"
-        f"{api_version}/models/{model_name}:generateContent"
-    )
-    req = urllib.request.Request(
-        url,
-        data=body,
-        headers={
-            "Content-Type": "application/json",
-            "x-goog-api-key": api_key,
-        },
-        method="POST",
-    )
-    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
-    with opener.open(req, timeout=20) as resp:
-        return json.loads(resp.read().decode("utf-8"))
-
-
-def get_gemini_advice(disease_class: str, confidence: float) -> str:
-    api_key = os.environ.get("GEMINI_API_KEY")
+def get_groq_advice(disease_class: str, confidence: float) -> str:
+    api_key = os.environ.get("GROQ_API_KEY")
     if not api_key:
-        raise RuntimeError("GEMINI_API_KEY is not set")
+        raise RuntimeError("GROQ_API_KEY is not set")
 
+    model_name = os.environ.get("GROQ_MODEL", "llama-3.3-70b-versatile").strip()
     payload = {
-        "contents": [
-            {
-                "role": "user",
-                "parts": [{"text": build_advice_prompt(disease_class, confidence)}],
-            }
-        ],
-        "generationConfig": {
-            "temperature": 0.4,
-            "maxOutputTokens": 2048,
-        },
+        "model": model_name,
+        "messages": [{"role": "user", "content": build_advice_prompt(disease_class, confidence)}],
+        "temperature": 0.4,
+        "max_tokens": 2048,
     }
     body = json.dumps(payload).encode("utf-8")
 
-    errors = []
-    try:
-        for model_name in get_gemini_model_candidates():
-            try:
-                data = call_gemini_generate_content(model_name, body, api_key)
-                text = extract_gemini_text(data)
-                if not text:
-                    raise RuntimeError("Gemini returned an empty response")
-                return text
-            except urllib.error.HTTPError as exc:
-                detail = exc.read().decode("utf-8", errors="ignore")
-                errors.append(f"{model_name}: {detail}")
-                if exc.code != 404:
-                    raise RuntimeError(f"Gemini API error: {detail}") from exc
-    except urllib.error.URLError as exc:
-        raise RuntimeError(f"Cannot reach Gemini API: {exc.reason}") from exc
-
-    tried = ", ".join(get_gemini_model_candidates())
-    last_error = errors[-1] if errors else "no response"
-    raise RuntimeError(
-        f"Gemini API error: no available model worked. Tried: {tried}. "
-        f"Last error: {last_error}"
+    req = urllib.request.Request(
+        "https://api.groq.com/openai/v1/chat/completions",
+        data=body,
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {api_key}",
+            "User-Agent": "plant-disease-app/1.0",
+        },
+        method="POST",
     )
+    try:
+        opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+        with opener.open(req, timeout=20) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+        text = extract_groq_text(data)
+        if not text:
+            raise RuntimeError("Groq returned an empty response")
+        return text
+    except urllib.error.HTTPError as exc:
+        detail = exc.read().decode("utf-8", errors="ignore")
+        raise RuntimeError(f"Groq API error: {detail}") from exc
+    except urllib.error.URLError as exc:
+        raise RuntimeError(f"Cannot reach Groq API: {exc.reason}") from exc
 
 
 @app.route("/")
@@ -293,18 +254,18 @@ def advice():
         return jsonify({"error": "Invalid confidence"}), 400
 
     try:
-        suggestion = get_gemini_advice(disease_class, confidence)
+        suggestion = get_groq_advice(disease_class, confidence)
     except RuntimeError as exc:
-        app.logger.warning("Gemini advice failed: %s", exc)
+        app.logger.warning("Groq advice failed: %s", exc)
         message = str(exc)
-        if "GEMINI_API_KEY is not set" in message:
-            error = "找不到 GEMINI_API_KEY，請確認 .env 在專案根目錄且 key 名稱正確。"
-        elif "Cannot reach Gemini API" in message:
-            error = "無法連線到 Gemini API，請確認網路、防火牆或代理伺服器設定。"
-        elif "Gemini API error" in message:
-            error = "Gemini API 回傳錯誤，請確認 API key、模型名稱與額度是否正常。"
+        if "GROQ_API_KEY is not set" in message:
+            error = "找不到 GROQ_API_KEY，請確認 .env 在專案根目錄且 key 名稱正確。"
+        elif "Cannot reach Groq API" in message:
+            error = "無法連線到 Groq API，請確認網路、防火牆或代理伺服器設定。"
+        elif "Groq API error" in message:
+            error = "Groq API 回傳錯誤，請確認 API key 與額度是否正常。"
         else:
-            error = "暫時無法取得 Gemini 建議，請稍後再試。"
+            error = "暫時無法取得建議，請稍後再試。"
         response = {"error": error}
         if app.debug:
             response["detail"] = message[:500]
