@@ -1,11 +1,6 @@
 # 深度學習農作物病蟲害影像辨識
 > **基於深度學習 ResNet-18 的即時影像辨識解決方案**
 
-![Python](https://img.shields.io/badge/Python-3.8%2B-blue)
-![PyTorch](https://img.shields.io/badge/Framework-PyTorch-ee4c2c)
-![ResNet18](https://img.shields.io/badge/Model-ResNet--18-orange)
-![Accuracy](https://img.shields.io/badge/Accuracy-97.2%25-brightgreen)
-
 本專案利用 ResNet 遷移學習技術，實現高精度的自動化農作物病害檢測。透過兩階段訓練策略（凍結特徵提取層與全層微調），有效提升了模型在複雜病斑上的辨識能力。
 
 ## 訓練成果
@@ -110,11 +105,21 @@ docker compose up --build
 
 ## Docker 容器化部署
 
-**前置條件：** 安裝 [Docker Desktop](https://www.docker.com/products/docker-desktop/)，並在專案根目錄建立 `.env`：
+**前置條件：** 安裝 [Docker Desktop](https://www.docker.com/products/docker-desktop/)，並在專案根目錄建立 `.env` 檔案。
 
+#### 建立 `.env` 檔案
+
+在專案根目錄（與 `docker-compose.yaml` 同層）建立一個名為 `.env` 的純文字檔：
+
+```env
+# 必填：Groq API Key（至 https://console.groq.com 免費申請）
+GROQ_API_KEY=your_groq_api_key_here
+
+# 選填：指定 Groq 模型，預設為 llama-3.3-70b-versatile
+# GROQ_MODEL=llama-3.3-70b-versatile
 ```
-GROQ_API_KEY=你的key
-```
+
+> `.env` 已列入 `.gitignore`，不會被 commit 至版本控制。請勿將 API Key 直接寫入程式碼或 README。
 
 | 動作 | 指令 |
 |------|------|
