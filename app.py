@@ -139,7 +139,7 @@ def _normalize_advice(text: str) -> str:
         # unordered list markers: - / * at line start  →  •
         s = re.sub(r"^[-*]\s+", "• ", s)
         # ordered list: 1. / 2. etc  →  keep number with dot, prepend •
-        s = re.sub(r"^\d+\.\s+", lambda m: "• ", s)
+        s = re.sub(r"^\d+\.\s+", "• ", s)
         # section headings written as "1. 可能問題：..." (numbered Chinese sections)
         # detect pattern: optional bullet + digit + dot|、 + Chinese label + colon
         heading = re.match(r"^[•\s]*\d+[\.、]\s*(.+)", s)
@@ -160,6 +160,56 @@ def extract_groq_text(data: dict) -> str:
         or ""
     ).strip()
     return _normalize_advice(text)
+
+
+def get_hf_advice(disease_class: str, confidence: float) -> str:
+    token = os.environ.get("HF_TOKEN")
+    if not token:
+        raise RuntimeError("HF_TOKEN is not set")
+
+    model_id = os.environ.get("HF_MODEL", "Qwen/Qwen2.5-7B-Instruct-Turbo").strip()
+    provider = os.environ.get("HF_PROVIDER", "together").strip()
+
+    url = f"https://router.huggingface.co/{provider}/v1/chat/completions"
+    payload = {
+        "model": model_id,
+        "messages": [{"role": "user", "content": build_advice_prompt(disease_class, confidence)}],
+        "temperature": 0.4,
+        "max_tokens": 2048,
+    }
+    body = json.dumps(payload).encode("utf-8")
+
+    req = urllib.request.Request(
+        url,
+        data=body,
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {token}",
+            "User-Agent": "plant-disease-app/1.0",
+        },
+        method="POST",
+    )
+    try:
+        opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+        with opener.open(req, timeout=60) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+        text = (
+            data.get("choices", [{}])[0]
+            .get("message", {})
+            .get("content", "")
+            or ""
+        ).strip()
+        text = _normalize_advice(text)
+        if not text:
+            raise RuntimeError("HuggingFace returned an empty response")
+        return text
+    except urllib.error.HTTPError as exc:
+        detail = exc.read().decode("utf-8", errors="ignore")
+        raise RuntimeError(f"HuggingFace API error: {detail}") from exc
+    except urllib.error.URLError as exc:
+        raise RuntimeError(f"Cannot reach HuggingFace API: {exc.reason}") from exc
+    except TimeoutError as exc:
+        raise RuntimeError("HuggingFace API timed out, try again later") from exc
 
 
 def get_groq_advice(disease_class: str, confidence: float) -> str:
@@ -253,17 +303,30 @@ def advice():
     except (TypeError, ValueError):
         return jsonify({"error": "Invalid confidence"}), 400
 
+    provider = data.get("provider", "groq").lower()
+
     try:
-        suggestion = get_groq_advice(disease_class, confidence)
+        if provider == "huggingface":
+            suggestion = get_hf_advice(disease_class, confidence)
+        else:
+            suggestion = get_groq_advice(disease_class, confidence)
     except RuntimeError as exc:
-        app.logger.warning("Groq advice failed: %s", exc)
+        app.logger.warning("Advice failed (%s): %s", provider, exc)
         message = str(exc)
         if "GROQ_API_KEY is not set" in message:
             error = "找不到 GROQ_API_KEY，請確認 .env 在專案根目錄且 key 名稱正確。"
+        elif "HF_TOKEN is not set" in message:
+            error = "找不到 HF_TOKEN，請確認 .env 中有設定 HuggingFace token。"
         elif "Cannot reach Groq API" in message:
             error = "無法連線到 Groq API，請確認網路、防火牆或代理伺服器設定。"
+        elif "Cannot reach HuggingFace API" in message:
+            error = "無法連線到 HuggingFace API，請確認網路連線。"
         elif "Groq API error" in message:
             error = "Groq API 回傳錯誤，請確認 API key 與額度是否正常。"
+        elif "HuggingFace API error" in message:
+            error = "HuggingFace API 回傳錯誤，請確認 token 與模型存取權限。"
+        elif "timed out" in message:
+            error = "HuggingFace API 回應逾時，請稍後再試。"
         else:
             error = "暫時無法取得建議，請稍後再試。"
         response = {"error": error}

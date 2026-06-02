@@ -20,6 +20,7 @@ WORKDIR /app
 COPY --from=builder /install/pkg /app/pkg
 COPY app.py .
 COPY templates/ templates/
+COPY static/ static/
 
 RUN mkdir -p /app/weights
 
