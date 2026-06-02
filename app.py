@@ -167,8 +167,8 @@ def get_hf_advice(disease_class: str, confidence: float) -> str:
     if not token:
         raise RuntimeError("HF_TOKEN is not set")
 
-    model_id = os.environ.get("HF_MODEL", "google/gemma-3-1b-it").strip()
-    provider = os.environ.get("HF_PROVIDER", "featherless-ai").strip()
+    model_id = os.environ.get("HF_MODEL", "Qwen/Qwen2.5-7B-Instruct-Turbo").strip()
+    provider = os.environ.get("HF_PROVIDER", "together").strip()
 
     url = f"https://router.huggingface.co/{provider}/v1/chat/completions"
     payload = {
@@ -191,7 +191,7 @@ def get_hf_advice(disease_class: str, confidence: float) -> str:
     )
     try:
         opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
-        with opener.open(req, timeout=30) as resp:
+        with opener.open(req, timeout=60) as resp:
             data = json.loads(resp.read().decode("utf-8"))
         text = (
             data.get("choices", [{}])[0]
@@ -208,6 +208,8 @@ def get_hf_advice(disease_class: str, confidence: float) -> str:
         raise RuntimeError(f"HuggingFace API error: {detail}") from exc
     except urllib.error.URLError as exc:
         raise RuntimeError(f"Cannot reach HuggingFace API: {exc.reason}") from exc
+    except TimeoutError as exc:
+        raise RuntimeError("HuggingFace API timed out, try again later") from exc
 
 
 def get_groq_advice(disease_class: str, confidence: float) -> str:
@@ -323,6 +325,8 @@ def advice():
             error = "Groq API 回傳錯誤，請確認 API key 與額度是否正常。"
         elif "HuggingFace API error" in message:
             error = "HuggingFace API 回傳錯誤，請確認 token 與模型存取權限。"
+        elif "timed out" in message:
+            error = "HuggingFace API 回應逾時，請稍後再試。"
         else:
             error = "暫時無法取得建議，請稍後再試。"
         response = {"error": error}

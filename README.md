@@ -27,7 +27,7 @@
 - 高效推理：ResNet-18 的輕量化特性，使其在邊緣設備端也能維持快速反應。
 - LLM 照護建議：辨識完成後可選擇兩種 AI 後端產生中文照護建議：
   - **Groq**：呼叫 `llama-3.3-70b-versatile`，速度快、品質高。
-  - **HuggingFace**：呼叫 `google/gemma-3-1b-it`（透過 Featherless AI），輕量省 token。
+  - **HuggingFace**：呼叫 `Qwen/Qwen2.5-7B-Instruct-Turbo`（透過 Together AI），繁中能力強。
 - 三欄式介面：影像上傳、診斷結果、AI 建議並排顯示於同一面板，一目瞭然。
 
 ---
@@ -106,13 +106,13 @@ GROQ_API_KEY=your_groq_api_key_here
 # 選填：指定 Groq 模型，預設為 llama-3.3-70b-versatile
 # GROQ_MODEL=llama-3.3-70b-versatile
 
-# HuggingFace（備用 LLM 後端，使用 Gemma）
+# HuggingFace（備用 LLM 後端，使用 Qwen）
 # Token 至 https://huggingface.co/settings/tokens 申請
 HF_TOKEN=your_huggingface_token_here
 
 # 選填：指定 HF 模型與 provider，預設如下
-# HF_MODEL=google/gemma-3-1b-it
-# HF_PROVIDER=featherless-ai
+# HF_MODEL=Qwen/Qwen2.5-7B-Instruct-Turbo
+# HF_PROVIDER=together
 ```
 
 > `.env` 已列入 `.gitignore`，不會被 commit 至版本控制。請勿將 API Key 直接寫入程式碼或 README。
