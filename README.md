@@ -25,7 +25,9 @@
 - 自動化分類：精準辨識包含黑斑病、銹病、白粉病等多種常見作物病害。
 - 信心度回傳：輸出疾病類別並附帶信心程度，同時列出 Top-3 候選結果。
 - 高效推理：ResNet-18 的輕量化特性，使其在邊緣設備端也能維持快速反應。
-- AI 照護建議：辨識完成後自動呼叫 Groq API（llama-3.3-70b-versatile），產生針對病害的中文照護建議。
+- LLM 照護建議：辨識完成後可選擇兩種 AI 後端產生中文照護建議：
+  - **Groq**：呼叫 `llama-3.3-70b-versatile`，速度快、品質高。
+  - **HuggingFace**：呼叫 `google/gemma-3-1b-it`（透過 Featherless AI），輕量省 token。
 - 三欄式介面：影像上傳、診斷結果、AI 建議並排顯示於同一面板，一目瞭然。
 
 ---
@@ -37,10 +39,15 @@
 ├── app.py                   # Flask 後端推論伺服器
 ├── requirements.txt         # Python 依賴套件清單
 ├── Dockerfile               # 容器化設定
-├── docker-compose.yml
-├── .dockerignore
+├── docker-compose.yaml
+├── .env                     # API 金鑰（不 commit）
 ├── templates/
-│   └── index.html           # 前端網頁介面
+│   └── index.html           # 前端網頁骨架
+├── static/
+│   ├── css/
+│   │   └── main.css         # 樣式
+│   └── js/
+│       └── main.js          # 前端邏輯
 └── train/
     ├── Train.ipynb          # 模型訓練流程
     └── plantvillage.ipynb   # 資料集探索
@@ -48,9 +55,8 @@
 
 ---
 
-## 環境建置
-
-### 1. 建立虛擬環境
+<details>
+<summary>本地開發環境建置（不使用 Docker 時）</summary>
 
 > 需要 Python 3.8 以上版本。
 
@@ -63,29 +69,12 @@ source .venv/Scripts/activate
 
 # 啟動（macOS / Linux）
 source .venv/bin/activate
-```
 
-### 2. 安裝依賴套件
-
-在虛擬環境啟動後執行：
-
-```bash
+# 安裝依賴套件
 pip install -r requirements.txt
 ```
 
-### 3. 設定 Groq API Key（選用）
-
-若要在辨識完成後產生照護建議，請先設定 `GROQ_API_KEY`。API key 可至 [console.groq.com](https://console.groq.com) 免費申請，會由 Flask 後端讀取，不會放在前端程式碼中。
-
-```powershell
-$env:GROQ_API_KEY="你的 Groq API Key"
-```
-
-可選擇指定模型，未設定時預設使用 `llama-3.3-70b-versatile`：
-
-```powershell
-$env:GROQ_MODEL="llama-3.3-70b-versatile"
-```
+</details>
 
 ---
 
@@ -99,8 +88,6 @@ docker compose up --build
 
 啟動成功後，開啟瀏覽器前往 **http://localhost:5000** 即可使用。
 
-> 詳細 Docker 指令請參考下方 **Docker 容器化部署** 章節。
-
 ---
 
 ## Docker 容器化部署
@@ -112,11 +99,20 @@ docker compose up --build
 在專案根目錄（與 `docker-compose.yaml` 同層）建立一個名為 `.env` 的純文字檔：
 
 ```env
-# 必填：Groq API Key（至 https://console.groq.com 免費申請）
+# Groq（預設 LLM 後端）
+# API Key 至 https://console.groq.com 免費申請
 GROQ_API_KEY=your_groq_api_key_here
 
 # 選填：指定 Groq 模型，預設為 llama-3.3-70b-versatile
 # GROQ_MODEL=llama-3.3-70b-versatile
+
+# HuggingFace（備用 LLM 後端，使用 Gemma）
+# Token 至 https://huggingface.co/settings/tokens 申請
+HF_TOKEN=your_huggingface_token_here
+
+# 選填：指定 HF 模型與 provider，預設如下
+# HF_MODEL=google/gemma-3-1b-it
+# HF_PROVIDER=featherless-ai
 ```
 
 > `.env` 已列入 `.gitignore`，不會被 commit 至版本控制。請勿將 API Key 直接寫入程式碼或 README。
