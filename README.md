@@ -24,60 +24,37 @@
 ## 系統架構
 
 ```mermaid
-flowchart TD
-    %% =========================
-    %% Frontend
-    %% =========================
-    FE[瀏覽器 Browser<br/>index.html + main.js]
+flowchart LR
+    FE["🌐 瀏覽器\nindex.html / main.js"]
 
-    %% =========================
-    %% Flask Server
-    %% =========================
-    FLASK[Flask Server :5000<br/>app.py]
-
-    FE -->|上傳影像 POST /predict| FLASK
-    FLASK -->|診斷結果 JSON| FE
-
-    %% =========================
-    %% ResNet-18 Model
-    %% =========================
-    MODEL[ResNet-18 模型<br/>PyTorch 推論引擎]
-
-    FLASK -->|影像前處理 299×299| MODEL
-    MODEL -->|Top-3 預測 + 信心度| FLASK
-
-    %% =========================
-    %% LLM Backend
-    %% =========================
-    FLASK -->|POST /advice| LLM_ROUTER
-
-    LLM_ROUTER{LLM 後端選擇}
-
-    LLM_ROUTER -->|backend=groq| GROQ[Groq API<br/>llama-3.3-70b-versatile]
-    LLM_ROUTER -->|backend=hf| HF[Together AI<br/>Qwen2.5-7B-Instruct-Turbo]
-
-    GROQ -->|中文照護建議| FLASK
-    HF -->|中文照護建議| FLASK
-    FLASK -->|建議文字| FE
-
-    %% =========================
-    %% Docker
-    %% =========================
-    subgraph Docker["Docker Container"]
-        FLASK
-        MODEL
+    subgraph Docker["Docker Container (port 5000)"]
+        direction TB
+        FLASK["Flask Server\napp.py"]
+        MODEL["ResNet-18\nPyTorch 推論引擎"]
+        FLASK -- "前處理 299×299\n→ softmax → Top-3" --> MODEL
     end
 
-    subgraph External["外部 API"]
-        GROQ
-        HF
+    subgraph LLM["外部 LLM API"]
+        direction TB
+        GROQ["Groq API\nllama-3.3-70b-versatile"]
+        HF["Together AI\nQwen2.5-7B-Instruct-Turbo"]
     end
 
-    subgraph PlantVillage["訓練資料"]
-        PV[(PlantVillage Dataset<br/>20,000+ 影像<br/>15 類病害)]
-    end
+    HF_MODEL[("HuggingFace\n模型權重\n(.pth)")]
+    PV[("PlantVillage\n20,000+ 影像\n15 類病害")]
 
-    PV -.->|遷移學習 Fine-tuning| MODEL
+    FE -- "POST /predict\n上傳影像" --> FLASK
+    FLASK -- "Top-3 結果 + 信心度" --> FE
+
+    FE -- "POST /advice\nprovider=groq" --> FLASK
+    FE -- "POST /advice\nprovider=huggingface" --> FLASK
+    FLASK -- "provider=groq" --> GROQ
+    FLASK -- "provider=huggingface" --> HF
+    GROQ -- "中文照護建議" --> FE
+    HF -- "中文照護建議" --> FE
+
+    HF_MODEL -. "首次啟動自動下載" .-> MODEL
+    PV -. "離線遷移學習\nFine-tuning" .-> MODEL
 ```
 
 ---
