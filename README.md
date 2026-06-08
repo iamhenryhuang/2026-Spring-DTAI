@@ -21,6 +21,67 @@
 - 優化器配置：使用 Adam 優化器，搭配學習率衰減策略 (StepLR) 以確保細節微調時的穩定性。
 - 數據集規模：[PlantVillage Dataset](https://www.kaggle.com/datasets/emmarex/plantdisease)，包含超過 20,000 張標註影像。
 
+## 系統架構
+
+```mermaid
+flowchart TD
+    %% =========================
+    %% Frontend
+    %% =========================
+    FE[瀏覽器 Browser<br/>index.html + main.js]
+
+    %% =========================
+    %% Flask Server
+    %% =========================
+    FLASK[Flask Server :5000<br/>app.py]
+
+    FE -->|上傳影像 POST /predict| FLASK
+    FLASK -->|診斷結果 JSON| FE
+
+    %% =========================
+    %% ResNet-18 Model
+    %% =========================
+    MODEL[ResNet-18 模型<br/>PyTorch 推論引擎]
+
+    FLASK -->|影像前處理 299×299| MODEL
+    MODEL -->|Top-3 預測 + 信心度| FLASK
+
+    %% =========================
+    %% LLM Backend
+    %% =========================
+    FLASK -->|POST /advice| LLM_ROUTER
+
+    LLM_ROUTER{LLM 後端選擇}
+
+    LLM_ROUTER -->|backend=groq| GROQ[Groq API<br/>llama-3.3-70b-versatile]
+    LLM_ROUTER -->|backend=hf| HF[Together AI<br/>Qwen2.5-7B-Instruct-Turbo]
+
+    GROQ -->|中文照護建議| FLASK
+    HF -->|中文照護建議| FLASK
+    FLASK -->|建議文字| FE
+
+    %% =========================
+    %% Docker
+    %% =========================
+    subgraph Docker["Docker Container"]
+        FLASK
+        MODEL
+    end
+
+    subgraph External["外部 API"]
+        GROQ
+        HF
+    end
+
+    subgraph PlantVillage["訓練資料"]
+        PV[(PlantVillage Dataset<br/>20,000+ 影像<br/>15 類病害)]
+    end
+
+    PV -.->|遷移學習 Fine-tuning| MODEL
+```
+
+---
+
 ## 核心功能
 - 自動化分類：精準辨識包含黑斑病、銹病、白粉病等多種常見作物病害。
 - 信心度回傳：輸出疾病類別並附帶信心程度，同時列出 Top-3 候選結果。
