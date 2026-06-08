@@ -21,6 +21,44 @@
 - 優化器配置：使用 Adam 優化器，搭配學習率衰減策略 (StepLR) 以確保細節微調時的穩定性。
 - 數據集規模：[PlantVillage Dataset](https://www.kaggle.com/datasets/emmarex/plantdisease)，包含超過 20,000 張標註影像。
 
+## 系統架構
+
+```mermaid
+flowchart LR
+    FE["🌐 瀏覽器\nindex.html / main.js"]
+
+    subgraph Docker["Docker Container (port 5000)"]
+        direction TB
+        FLASK["Flask Server\napp.py"]
+        MODEL["ResNet-18\nPyTorch 推論引擎"]
+        FLASK -- "前處理 299×299\n→ softmax → Top-3" --> MODEL
+    end
+
+    subgraph LLM["外部 LLM API"]
+        direction TB
+        GROQ["Groq API\nllama-3.3-70b-versatile"]
+        HF["Together AI\nQwen2.5-7B-Instruct-Turbo"]
+    end
+
+    HF_MODEL[("HuggingFace\n模型權重\n(.pth)")]
+    PV[("PlantVillage\n20,000+ 影像\n15 類病害")]
+
+    FE -- "POST /predict\n上傳影像" --> FLASK
+    FLASK -- "Top-3 結果 + 信心度" --> FE
+
+    FE -- "POST /advice\nprovider=groq" --> FLASK
+    FE -- "POST /advice\nprovider=huggingface" --> FLASK
+    FLASK -- "provider=groq" --> GROQ
+    FLASK -- "provider=huggingface" --> HF
+    GROQ -- "中文照護建議" --> FE
+    HF -- "中文照護建議" --> FE
+
+    HF_MODEL -. "首次啟動自動下載" .-> MODEL
+    PV -. "離線遷移學習\nFine-tuning" .-> MODEL
+```
+
+---
+
 ## 核心功能
 - 自動化分類：精準辨識包含黑斑病、銹病、白粉病等多種常見作物病害。
 - 信心度回傳：輸出疾病類別並附帶信心程度，同時列出 Top-3 候選結果。
