@@ -311,10 +311,23 @@ body {
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 #verdict { display: none; flex-direction: column; padding: var(--card-pad); border-bottom: var(--card-sep); }
 
+.v-tag-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 11px; }
+.v-tag-row .v-tag { margin-bottom: 0; }
+
+.v-warn {
+  display: none;
+  font-size: .69rem; font-weight: 600;
+  color: var(--a-500);
+  background: var(--a-100);
+  border: 1px solid #f0dfc0;
+  border-radius: 99px;
+  padding: 2px 9px;
+}
+
 .v-tag {
   display: inline-flex; align-items: center; gap: 5px; align-self: flex-start;
   padding: 3px 9px; border-radius: 99px;
-  font-size: .69rem; font-weight: 700; letter-spacing: .03em; margin-bottom: 11px;
+  font-size: .69rem; font-weight: 700; letter-spacing: .03em;
 }
 
 .v-tag-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }

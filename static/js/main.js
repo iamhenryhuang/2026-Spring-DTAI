@@ -26,6 +26,8 @@ const adviceNote  = document.getElementById("advice-note");
 const adviceStat  = document.getElementById("advice-status");
 const providerSelect = document.getElementById("provider-select");
 const adviceTitle    = document.getElementById("advice-title");
+const regenBtn       = document.getElementById("regen-btn");
+const vWarn          = document.getElementById("v-warn");
 
 const ZH = {
   "Pepper Bell - Bacterial Spot":                   "甜椒 — 細菌性斑點病",
@@ -48,6 +50,7 @@ const ZH = {
 function zh(cls) { return ZH[cls] || ""; }
 
 let file = null;
+let lastTop = null;
 
 function setStatus(txt, s = "") { hdLabel.textContent = txt; hdStatus.dataset.s = s; }
 function isHealthy(c) { return c.toLowerCase().includes("healthy"); }
@@ -87,7 +90,8 @@ analyzeBtn.addEventListener("click", async () => {
     const data = await res.json();
     if (!res.ok || data.error) { showErr(data.error || "辨識失敗，請重新嘗試。"); return; }
     render(data.predictions);
-    await loadAdvice(data.predictions[0]);
+    lastTop = data.predictions[0];
+    await loadAdvice(lastTop);
   } catch {
     showErr("無法連線至辨識服務。");
   } finally {
@@ -97,13 +101,21 @@ analyzeBtn.addEventListener("click", async () => {
 });
 
 resetBtn.addEventListener("click", () => {
-  file = null; fileInput.value = "";
+  file = null; lastTop = null; fileInput.value = "";
   prevImg.src = ""; fileName.textContent = "";
   dzWrap.style.display = "";
   prevWrap.classList.remove("on");
   clearResults(); clearErr();
   setStatus("等待上傳", "");
 });
+
+regenBtn.addEventListener("click", async () => {
+  if (!lastTop) return;
+  resetAdvice();
+  await loadAdvice(lastTop);
+});
+
+const LOW_CONF = 60;
 
 function render(preds) {
   const top = preds[0];
@@ -115,6 +127,7 @@ function render(preds) {
   vName.textContent   = top.class;
   vZh.textContent     = zh(top.class);
   vPct.textContent    = pct + "%";
+  vWarn.style.display = top.confidence < LOW_CONF ? "block" : "none";
   verdict.style.display = "flex";
   verdict.classList.add("fi");
 
@@ -176,10 +189,12 @@ function resetAdvice() {
   adviceBody.innerHTML      = "";
   adviceBody.classList.remove("fi");
   adviceStat.classList.remove("on");
+  regenBtn.style.display    = "none";
 }
 
 providerSelect.addEventListener("change", () => {
   adviceTitle.textContent = "LLM 照護建議";
+  if (lastTop) regenBtn.style.display = "";
 });
 
 async function loadAdvice(top) {
@@ -203,6 +218,7 @@ async function loadAdvice(top) {
     setStatus("辨識完成", "ready");
   } finally {
     adviceStat.classList.remove("on");
+    if (lastTop) regenBtn.style.display = "";
   }
 }
 

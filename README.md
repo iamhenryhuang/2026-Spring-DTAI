@@ -25,6 +25,14 @@
 
 ```mermaid
 flowchart LR
+    subgraph Train["離線訓練 (Google Colab)"]
+        COLAB["ResNet-18 Fine-tuning\nPlantVillage 20,000+ 影像\n15 類病害"]
+    end
+
+    HF_REPO[("HuggingFace\niamhenryhuang/\nplant_disease_resnet18_finetuned\n(.pth)")]
+
+    COLAB -- "上傳權重" --> HF_REPO
+
     FE["🌐 瀏覽器\nindex.html / main.js"]
 
     subgraph Docker["Docker Container (port 5000)"]
@@ -37,11 +45,10 @@ flowchart LR
     subgraph LLM["外部 LLM API"]
         direction TB
         GROQ["Groq API\nllama-3.3-70b-versatile"]
-        HF["Together AI\nQwen2.5-7B-Instruct-Turbo"]
+        HF_LLM["Together AI\nQwen2.5-7B-Instruct-Turbo"]
     end
 
-    HF_MODEL[("HuggingFace\n模型權重\n(.pth)")]
-    PV[("PlantVillage\n20,000+ 影像\n15 類病害")]
+    HF_REPO -. "Docker 首次啟動\n自動下載" .-> MODEL
 
     FE -- "POST /predict\n上傳影像" --> FLASK
     FLASK -- "Top-3 結果 + 信心度" --> FE
@@ -49,12 +56,9 @@ flowchart LR
     FE -- "POST /advice\nprovider=groq" --> FLASK
     FE -- "POST /advice\nprovider=huggingface" --> FLASK
     FLASK -- "provider=groq" --> GROQ
-    FLASK -- "provider=huggingface" --> HF
+    FLASK -- "provider=huggingface" --> HF_LLM
     GROQ -- "中文照護建議" --> FE
-    HF -- "中文照護建議" --> FE
-
-    HF_MODEL -. "首次啟動自動下載" .-> MODEL
-    PV -. "離線遷移學習\nFine-tuning" .-> MODEL
+    HF_LLM -- "中文照護建議" --> FE
 ```
 
 ---
@@ -78,7 +82,7 @@ flowchart LR
 ├── requirements.txt         # Python 依賴套件清單
 ├── Dockerfile               # 容器化設定
 ├── docker-compose.yaml
-├── .env                     # API 金鑰（不 commit）
+├── .env                     # API 金鑰
 ├── templates/
 │   └── index.html           # 前端網頁骨架
 ├── static/
