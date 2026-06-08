@@ -98,7 +98,10 @@
       </div>
 
       <div id="verdict">
-        <div class="v-tag" id="v-tag"><div class="v-tag-dot"></div><span id="v-tag-label"></span></div>
+        <div class="v-tag-row">
+          <div class="v-tag" id="v-tag"><div class="v-tag-dot"></div><span id="v-tag-label"></span></div>
+          <div class="v-warn" id="v-warn">信心偏低，建議補拍清晰影像確認</div>
+        </div>
         <div class="v-name" id="v-name"></div>
         <div class="v-zh"   id="v-zh"></div>
         <div class="v-bar-wrap">
@@ -129,10 +132,11 @@
         </div>
         <div style="display:flex;align-items:center;gap:6px;margin-right:8px;flex-shrink:0;">
           <label for="provider-select" style="font-size:0.78rem;color:var(--n-500);white-space:nowrap;">模型</label>
-          <select id="provider-select" style="font-size:0.78rem;padding:2px 6px;border:1px solid var(--n-200);border-radius:6px;background:var(--surface);color:var(--n-700);cursor:pointer;">
+          <select id="provider-select" style="font-size:0.78rem;padding:2px 6px;border:1px solid var(--n-200);border-radius:6px;background:var(--n-0);color:var(--n-700);cursor:pointer;">
             <option value="groq">Groq / Llama 3.3</option>
             <option value="huggingface">HuggingFace / Qwen 2.5</option>
           </select>
+          <button class="btn btn-soft" id="regen-btn" style="display:none;height:26px;padding:0 10px;font-size:0.72rem;">重新產生</button>
         </div>
         <div class="card-badge" id="advice-status">
           <div class="spin"></div>

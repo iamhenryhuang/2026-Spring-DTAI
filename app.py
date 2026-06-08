@@ -10,6 +10,7 @@ from PIL import Image
 from flask import Flask, request, jsonify, render_template
 
 app = Flask(__name__)
+app.config["MAX_CONTENT_LENGTH"] = 10 * 1024 * 1024
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
