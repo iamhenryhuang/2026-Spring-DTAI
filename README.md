@@ -79,7 +79,8 @@ flowchart LR
 ```
 2026-Spring-DTAI/
 ├── app.py                   # Flask 後端推論伺服器
-├── requirements.txt         # Python 依賴套件清單
+├── pyproject.toml           # Python 依賴定義
+├── uv.lock                  # 精確版本鎖定（由 uv lock 產生）
 ├── Dockerfile               # 容器化設定
 ├── docker-compose.yaml
 ├── .env                     # API 金鑰
@@ -100,20 +101,29 @@ flowchart LR
 <details>
 <summary>本地開發環境建置（不使用 Docker 時）</summary>
 
-> 需要 Python 3.8 以上版本。
+> 需要 Python 3.11 以上版本與 [uv](https://docs.astral.sh/uv/getting-started/installation/)。
 
 ```bash
-# 建立虛擬環境
-python -m venv .venv
+# 安裝 uv（若尚未安裝）
+# Windows (PowerShell)
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+# macOS / Linux
+curl -LsSf https://astral.sh/uv/install.sh | sh
 
-# 啟動（Windows bash / Git Bash）
-source .venv/Scripts/activate
+# 依照 uv.lock 精確安裝依賴並建立 .venv
+uv sync
 
-# 啟動（macOS / Linux）
+# 啟動虛擬環境後執行
+# Windows (PowerShell)
+.venv\Scripts\Activate.ps1
+# macOS / Linux
 source .venv/bin/activate
 
-# 安裝依賴套件
-pip install -r requirements.txt
+# 啟動開發伺服器
+flask --app app run --debug
+
+# 更新依賴後重新鎖定（僅在修改 pyproject.toml 後需要）
+uv lock
 ```
 
 </details>
